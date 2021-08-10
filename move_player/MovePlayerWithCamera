@@ -1,0 +1,82 @@
+using UnityEngine;
+
+public class PlayerMovement : MonoBehaviour
+{
+
+    [SerializeField] 
+    private float _speed = 20f;
+    [SerializeField]
+    private float _jumpForce = 1f;
+    private Vector3 _direction;
+    //:Camera VARIABLES[start]
+    [SerializeField]
+    private float _cameraOffset = 15f;
+    [SerializeField]
+    private float _cameraHeight = 20f;
+    [SerializeField]
+    private float _cameraRotationSensitivity = 5f;
+    //:Camera VARIABLES[end]
+    private CharacterController _charController;
+
+    private Transform _mainCameraTransform;
+    private float _directionY;
+    private void Awake()
+    {
+        _charController = GetComponent<CharacterController>();
+        _mainCameraTransform = Camera.main.GetComponent<Transform>();
+    }
+
+
+   
+    private void cameraMovement()
+    {
+        float currentYRotation = transform.eulerAngles.y;
+        Quaternion eulerRotation = Quaternion.Euler(0, currentYRotation, 0);
+        Vector3 offset = transform.position - eulerRotation * transform.forward * _cameraOffset;
+        offset.y = _cameraHeight;
+        _mainCameraTransform.position = offset;
+        _mainCameraTransform.LookAt(transform.position);
+    }
+
+    private Vector3 getVelocity(bool isJumped, Vector3 forward, Vector3 right)
+    {
+        Vector3 movementVelocity =(forward * Input.GetAxis("Vertical") + right * Input.GetAxis("Horizontal")).normalized;
+        if (isJumped && _charController.isGrounded)
+        {
+            _directionY = _jumpForce;
+        }
+        _directionY -= 1f* Time.deltaTime;        
+        movementVelocity.y = _directionY;
+        return movementVelocity;
+    }
+    private void rotateCharacter()
+    {
+        float horizontal = Input.GetAxis("Mouse X") * _cameraRotationSensitivity;
+        transform.Rotate(0, horizontal, 0);
+
+    }
+    private void syncCameraRotation()
+    {
+
+        Quaternion targetRotation = Quaternion.Euler(0, transform.rotation.eulerAngles.y, 0);
+        Vector3 targetPosition = transform.position - targetRotation * (Vector3.forward * _cameraOffset);
+        targetPosition.y = _cameraHeight;
+        _mainCameraTransform.position = targetPosition;
+        _mainCameraTransform.LookAt(transform.position);
+    }
+    private void moveCharacter()
+    {
+        Vector3 cameraForward = _mainCameraTransform.forward;
+        Vector3 cameraRight = _mainCameraTransform.right;
+        Vector3 movementVelocity = getVelocity(Input.GetKeyDown(KeyCode.Space), cameraForward, cameraRight);
+        _charController.Move(movementVelocity * _speed * Time.deltaTime);
+    }
+    private void Update()
+    {
+        // rotate character
+        rotateCharacter();
+        // put camera after rotation
+        syncCameraRotation();
+        moveCharacter();
+    }
+}
