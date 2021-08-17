@@ -1,0 +1,98 @@
+using UnityEngine;
+
+public class PlayerMovement : MonoBehaviour
+{
+
+    private CharacterController _charController;
+
+    [SerializeField]
+    private float _moveSpeed = 16f;
+    [SerializeField]
+    private float _rotationSpeed = 15f;
+    private Vector3 _movementDir;
+    private float _jumpSpeed = 2f;
+    private float yVelocity;
+    private float _gravity = 3f;
+    private bool mayJump => _charController.isGrounded && Input.GetKey(KeyCode.Space);
+    /***<<<--- Camera MOVEMENT STUFF:--->>> ***/
+    [Space(4)]
+    [SerializeField]
+    private float _mouseSensivity = 20f;
+    [SerializeField]
+    private Camera _mainCamera;
+    [SerializeField]
+    private float _cameraOffset = 14f;
+    [SerializeField]
+    private float _cameraHeight = 6f;
+    /***<<<--- Camera MOVEMENT STUFF:--->>>***/
+
+    private void Awake()
+    {
+        _charController = GetComponent<CharacterController>();
+
+    }
+    private float YVelocity
+    {
+        get
+        {
+            if (mayJump)
+            {
+                yVelocity = _jumpSpeed;
+            }
+            yVelocity -= _gravity * Time.deltaTime;
+            if ((_charController.isGrounded && yVelocity < 0))
+            {
+                yVelocity = 0;
+            }
+            return yVelocity;
+        }
+    }
+    private void moveCharacter()
+    {
+        _movementDir = Input.GetAxis("Vertical") * _mainCamera.transform.forward + Input.GetAxis("Horizontal") * _mainCamera.transform.right;
+
+        _movementDir = transform.TransformDirection(_movementDir);
+        _movementDir = _movementDir.normalized;
+        _movementDir.y = YVelocity;
+        if (_movementDir != Vector3.zero)
+        {
+           _charController.Move(_movementDir * _moveSpeed * Time.deltaTime);
+        }
+      
+    }
+    private void rotateCamera()
+    {
+        float horisontalShift = Input.GetAxis("Mouse X");
+        if (horisontalShift != 0)
+        {
+            _mainCamera.transform.LookAt(transform.position);
+            // вращение камеры:
+            _mainCamera.transform.RotateAround(transform.position, Vector3.up, _mouseSensivity * horisontalShift );
+        }
+    }
+    
+    private void offsetCamera()
+    {
+        Vector3 targetOffset = transform.position - _mainCamera.transform.forward * _cameraOffset ;
+        targetOffset.y = transform.position.y + _cameraHeight;
+        _mainCamera.transform.position = targetOffset;
+
+    }
+    private void moveCamera()
+    {
+         
+        // это все что касается вращения вокруг плеера ↓
+        rotateCamera();
+        // это все что касается вращения вокруг плеера ↑ 
+        offsetCamera();
+
+    }
+
+    void Update()
+    {
+        moveCamera();
+        moveCharacter();
+     
+    }
+
+}
